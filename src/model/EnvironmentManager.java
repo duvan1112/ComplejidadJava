@@ -1,29 +1,48 @@
 package model;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Random;
+import java.util.*;
 
 /**
  * @author duvan
  */
 public class EnvironmentManager {
 
-    private Sphere[] sphere;
+    private Sphere[] spheres;
 
     public EnvironmentManager(int numberSpheres) {
-        sphere = new Sphere[numberSpheres];
-        Random random = new Random();
-        for (int i = 0; i < numberSpheres; i++) {
-            sphere[i]= new Sphere(random.nextInt(10)+1,
-                    new Location(random.nextDouble()*100, random.nextDouble()*100,
-                            random.nextDouble()*100), random.nextInt(3)+1);
+        spheres = new Sphere[numberSpheres];
+    }
+
+    public void add(Sphere sphere){
+        for (int i = 0; i < spheres.length; i++) {
+            if (spheres[i] == null) {
+                spheres[i]=sphere;
+                break;
+            }
+        }
+    }
+
+    public double calculateAverage(int time){
+        recalculate(time);
+        ArrayList<Double> doubles=calculateAllDistances();
+        double sum = 0;
+        for (int i = 0; i < doubles.size(); i++) {
+            sum += doubles.get(i);
+        }
+        return sum/(doubles.size());
+    }
+
+    private void recalculate(int time){
+        for (int i = 0; i < spheres.length; i++) {
+            Sphere sphere=spheres[i];
+            sphere.setLocation(new Location(sphere.getLocation().getX()+
+                    (sphere.getSpeed()*time),sphere.getLocation().getY(),sphere.getLocation().getZ()));
         }
     }
 
     public double calculateDistance() {
         double max = calculateAllDistances().get(0);
-        for (int i = 0; i < calculateAllDistances().size(); i++) {
+        for (int i = 1; i < calculateAllDistances().size(); i++) {
             if (max<calculateAllDistances().get(i)){
                 max=calculateAllDistances().get(i);
             }
@@ -32,32 +51,36 @@ public class EnvironmentManager {
     }
 
     private ArrayList<Double> calculateAllDistances() {
-        ArrayList<Double> aux = new ArrayList<>();
-        for (int i = 0; i < sphere.length; i++) {
-            for (int j = i + 1; j < sphere.length; j++) {
-                aux.add((Math.sqrt(Math.pow((sphere[i].getLocation().getX() - sphere[j].getLocation().getX()), 2)
-                        + Math.pow((sphere[i].getLocation().getY() - sphere[j].getLocation().getY()), 2)
-                        + Math.pow(sphere[i].getLocation().getZ() - sphere[j].getLocation().getZ(), 2)))
-                        -sphere[i].getSize()-sphere[j].getSize());
+        ArrayList<Double> distances = new ArrayList<>();
+        for (int i = 0; i < spheres.length; i++) {
+            for (int j = i + 1; j < spheres.length; j++) {
+                distances.add((Math.sqrt(Math.pow((spheres[i].getLocation().getX() - spheres[j].getLocation().getX()), 2)
+                        + Math.pow((spheres[i].getLocation().getY() - spheres[j].getLocation().getY()), 2)
+                        + Math.pow(spheres[i].getLocation().getZ() - spheres[j].getLocation().getZ(), 2)))
+                        -spheres[i].getSize()-spheres[j].getSize());
             }
         }
-        return aux;
+        return distances;
     }
 
     public double mostRepeat() {
-        ArrayList<Double> aux = calculateAllDistances();
-        ArrayList<Integer> repeated= searchMoreRepeated(aux);
-        double mostRepeat=repeated.get(0);
-        for (Integer integer : repeated) {
-            if (mostRepeat < integer) {
-                mostRepeat = integer;
+        ArrayList<Double> distances = calculateAllDistances();
+        HashMap<Double,Integer> repeated= searchMoreRepeated(distances);
+        double quantity= repeated.get(distances.get(0));
+        double distance=distances.get(0);
+        Iterator<Map.Entry<Double, Integer>> iterator = repeated.entrySet().iterator();
+        while (iterator.hasNext()) {
+            Map.Entry<Double, Integer> data = iterator.next();
+            if (quantity<data.getValue()){
+                quantity=data.getValue();
+                distance= data.getKey();
             }
         }
-        return mostRepeat;
+        return distance;
     }
 
-    private ArrayList<Integer> searchMoreRepeated(ArrayList<Double> distances) {
-        ArrayList<Integer> repeated = new ArrayList<>();
+    private HashMap<Double,Integer> searchMoreRepeated(ArrayList<Double> distances) {
+        HashMap<Double,Integer> repeated = new HashMap<>();
         int count=0;
         for (int i = 0; i < distances.size() ;i++) {
             for (Double distance : distances) {
@@ -65,14 +88,19 @@ public class EnvironmentManager {
                     count++;
                 }
             }
-            repeated.add(count);
+            repeated.put(distances.get(i),count);
+            count=0;
         }
         return repeated;
     }
 
     public ArrayList<Double> sortDistances() {
-        Collections.sort(calculateAllDistances());
-        return calculateAllDistances();
+        ArrayList<Double> arrayList = calculateAllDistances();
+        Collections.sort(arrayList);
+        return arrayList;
     }
 
+    public Sphere[] getSpheres() {
+        return spheres;
+    }
 }
